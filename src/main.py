@@ -11,12 +11,14 @@ if __name__ == "__main__":
     env.initializeGrid()
 
     while True:
+        # Agent has solved the puzzle
         if env.hasReachedEnd():
-            time.sleep(0.5) # Pause for a moment before quitting
+            time.sleep(0.5)
             break
         
+        # Agent has reached a terminal state (end of episode)
         if env.hasReachedDeadEnd():
-            time.sleep(0.5) # Pause for a moment before resetting
+            time.sleep(0.5)
             env.reset()
         
         env.renderGame()

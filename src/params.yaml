@@ -1,20 +1,29 @@
 grid:
   rows: 6
   cols: 6
+  # Size of each cell in pixels
   cell_size: 90
+  # Colors in RGB format
   white: [245, 245, 245]
   black: [50, 50, 50]
   gray: [180, 180, 180]
   green: [0, 180, 100]
   red: [220, 50, 50]
 
+# Positioning reference:
+# (0, 0) is the top-left corner of the grid
+# (rows - 1, cols - 1) is the bottom-right corner of the grid
+
+# List of target positions for the agent to reach in the format [x, y]
 targets:
   1: [4,4]
   2: [3,4]
   3: [2,1]
 
+# Starting position of the agent in the format [x, y]
 start_position: [1,1]
 
+# List of blocked edges (walls) in the format [[x1, y1], [x2, y2]]
 blocked_edges:
   - [[1,0],[1,1]]
   - [[2,0],[2,1]]
