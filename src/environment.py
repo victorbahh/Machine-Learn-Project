@@ -49,7 +49,7 @@ class ZipEnvironment:
         self.message = ""
 
     def hasWall(self, a, b):
-        return (a, b) in self.blockedEdges
+        return ((a, b) in self.blockedEdges or (b, a) in self.blockedEdges)
 
     def inside(self, pos):
         r, c = pos
@@ -132,3 +132,19 @@ class ZipEnvironment:
         
         pygame.display.flip()
         self.clock.tick(30)
+        
+    def hasReachedEnd(self):
+        return self.currentTarget > len(self.targets) and len(self.visited) == self.ROWS * self.COLS
+    
+    def hasReachedDeadEnd(self):
+        # Check if there are any valid moves left
+        for action in self.ACTIONS.values():
+            dr, dc = action
+            newPos = (self.agentPos[0] + dr, self.agentPos[1] + dc)
+
+            if (self.inside(newPos) and
+                (not self.hasBlockedEdges or not self.hasWall(self.agentPos, newPos)) and
+                newPos not in self.visited):
+                return False  # There is at least one valid move left
+
+        return True  # No valid moves left
