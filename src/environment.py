@@ -2,7 +2,8 @@ import pygame
 import sys
 import yaml
 
-from Drawing import DrawingHelper
+from .drawing import DrawingHelper
+
 
 class ZipEnvironment:
     def __init__(self):
@@ -57,43 +58,60 @@ class ZipEnvironment:
 
     def step(self, action):
         dr, dc = action
+        # Reward for valid move
+        reward = 0.1  
+        done = False
 
         newPos = (self.agentPos[0] + dr, self.agentPos[1] + dc)
 
-        # The agent attempted to leave the grid
+        # Agent attempted to move outside the grid
         if not self.inside(newPos):
             self.message = "Invalid move"
-            return
+            return self.agentPos, -1, False, {}
 
-        # The agent hit a wall (from any direction)
-        if self.hasBlockedEdges and (self.hasWall(self.agentPos, newPos) or self.hasWall(newPos, self.agentPos)):
+        # Agent hit a wall (blocked edge)
+        if self.hasBlockedEdges and self.hasWall(self.agentPos, newPos):
             self.message = "There is a barrier"
-            return
+            return self.agentPos, -1, False, {}
 
-        # The agent tried to revisit a cell
+        # Agent attempted to revisit a cell
         if newPos in self.visited:
             self.message = "Cell can't be revisited"
-            return
+            return self.agentPos, -1, False, {}
 
-        # Valid move: register move and the previous direction
+        # Valid move: update position and visited path
         self.visited[self.agentPos] = action
         self.agentPos = newPos
         self.visited[newPos] = None
 
-        # The agent got the right target
+        # Agent reached the correct target in sequence
         if (self.currentTarget in self.targets and
             newPos == self.targets[self.currentTarget]):
 
+            reward = 10
             self.message = f"Found {self.currentTarget}"
             self.currentTarget += 1
 
-            if self.currentTarget > len(self.targets) and len(self.visited) == self.ROWS * self.COLS:
+            # Check if puzzle is fully completed
+            if self.hasReachedEnd():
+                reward = 50
+                done = True
                 self.message = "Puzzle complete!"
 
-        # The agent got the wrong target
+        # Agent reached a target but in the wrong order
         elif newPos in self.targets.values():
+            reward = -5
             self.message = "Wrong number"
-            
+
+        # Check if no valid moves are left (dead end)
+        if self.hasReachedDeadEnd():
+            done = True
+            reward = -10
+            self.message = "Dead end"
+
+        self.message = "Reward: " + str(reward)
+        return self.agentPos, reward, done, {}   
+    
     def initializeGrid(self):
         pygame.init()
 
@@ -108,7 +126,7 @@ class ZipEnvironment:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-                sys.exit()
+                return
 
             if event.type == pygame.KEYDOWN:
                 if event.key in self.ACTIONS:
@@ -132,6 +150,10 @@ class ZipEnvironment:
         
         pygame.display.flip()
         self.clock.tick(30)
+
+    def closeRender(self):
+        pygame.display.quit()
+        pygame.quit()
         
     def hasReachedEnd(self):
         return self.currentTarget > len(self.targets) and len(self.visited) == self.ROWS * self.COLS
