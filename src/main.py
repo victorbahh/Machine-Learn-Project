@@ -4,15 +4,20 @@ from environment import ZipEnvironment
 import numpy as np
 import matplotlib.pyplot as plt
 
+import yaml
+
 if __name__ == "__main__":
+
+    with open("src/params.yaml", "r") as file:
+        params = yaml.safe_load(file)
+
+    numEpisodes = params["learning"]["episodes"]
 
     env = ZipEnvironment()
     env.initializeGrid()
 
     qlearning = QLearning(env)
-
-    numEpisodes = 3000
-
+    
     # -------------------------
     # Interactive plotting
     # -------------------------

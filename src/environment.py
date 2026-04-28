@@ -96,7 +96,7 @@ class ZipEnvironment:
 
         if self.hasReachedDeadEnd():
             self.message = "Dead end reached"
-            R = -200
+            R = -100
             done = True
             
             return [Sl, R, done]
@@ -133,7 +133,7 @@ class ZipEnvironment:
                 return [Sl, R, done]
 
             # Found the correct target but the puzzle is not complete yet
-            R = 40
+            R = 30
             return [Sl, R, done]
 
         # The agent made a valid move, but got the wrong target
@@ -145,12 +145,12 @@ class ZipEnvironment:
         # The agent made a valid move, but got to a dead end
         if not self.hasReachedEnd() and self.hasReachedDeadEnd():
             self.message = "Dead end reached"
-            R = -200
+            R = -100
             done = True
             
             return [Sl, R, done]
             
-        R = 3 # Valid move, but no target found yet
+        R = 2 # Valid move, but no target found yet
         return [Sl, R, done]
             
     def initializeGrid(self):
