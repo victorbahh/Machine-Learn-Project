@@ -130,6 +130,9 @@ class DrawingHelper:
             
             screen.blit(txt, txtRect)
             
-    def drawMsg(self, screen, msg, font):
+    def drawMsg(self, screen, msg, font, episode):
         msgRender = font.render(msg, True, self.BLACK)
         screen.blit(msgRender, (10, 10))
+        
+        current_episode = font.render(f"Episode: {episode}", True, self.BLACK)
+        screen.blit(current_episode, (10, 40))

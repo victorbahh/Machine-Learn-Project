@@ -2,7 +2,7 @@ import pygame
 import sys
 import yaml
 
-from Drawing import DrawingHelper
+from helpers import DrawingHelper
 
 class ZipEnvironment:
     def __init__(self):
@@ -33,66 +33,125 @@ class ZipEnvironment:
         self.helper = DrawingHelper()
         
         # Define actions (up, down, left, right)
-        self.ACTIONS = {
-            pygame.K_UP: (-1, 0),
-            pygame.K_DOWN: (1, 0),
-            pygame.K_LEFT: (0, -1),
-            pygame.K_RIGHT: (0, 1)
-        }
+        self.ACTIONS = [
+            (-1, 0), # Up
+            (1, 0), # Down
+            (0, -1), # Left
+            (0, 1) # Right
+        ]
+        
+        self.isPuzzleComplete = False
         
         self.reset()
 
+    # Get valid actions from a given position (considering grid boundaries and walls)
+    def validActions(self, pos):
+        valid = []
+
+        for i, action in enumerate(self.ACTIONS):
+            dr, dc = action
+            newPos = (pos[0] + dr, pos[1] + dc)
+
+            # Sai do grid?
+            if not self.inside(newPos):
+                continue
+
+            # Bate em barreira?
+            if self.hasBlockedEdges and (
+                self.hasWall(pos, newPos) or
+                self.hasWall(newPos, pos)
+            ):
+                continue
+            
+            valid.append(i)
+        return valid
+
+    # Reset the environment
     def reset(self):
         self.agentPos = self.start
         self.visited = {self.start: None}
         self.currentTarget = 1
         self.message = ""
+        
+        # Return the initial state (agent's starting position)
+        return self.agentPos
 
+    # Check if there is a wall between two positions
     def hasWall(self, a, b):
         return ((a, b) in self.blockedEdges or (b, a) in self.blockedEdges)
 
+    # Check if a position is inside the grid
     def inside(self, pos):
         r, c = pos
         return 0 <= r < self.ROWS and 0 <= c < self.COLS
 
+    # Take a step in the environment based on the action taken by the agent
     def step(self, action):
         dr, dc = action
+        Sl = self.agentPos
+        R = -1
+        done = False
 
         newPos = (self.agentPos[0] + dr, self.agentPos[1] + dc)
 
-        # The agent attempted to leave the grid
-        if not self.inside(newPos):
-            self.message = "Invalid move"
-            return
+        if self.hasReachedDeadEnd():
+            self.message = "Dead end reached"
+            R = -200
+            done = True
+            
+            return [Sl, R, done]
 
-        # The agent hit a wall (from any direction)
-        if self.hasBlockedEdges and (self.hasWall(self.agentPos, newPos) or self.hasWall(newPos, self.agentPos)):
-            self.message = "There is a barrier"
-            return
-
-        # The agent tried to revisit a cell
         if newPos in self.visited:
-            self.message = "Cell can't be revisited"
-            return
+            self.message = "Already visited"
+            R = -15
+            return [Sl, R, done]
 
         # Valid move: register move and the previous direction
         self.visited[self.agentPos] = action
         self.agentPos = newPos
         self.visited[newPos] = None
+        Sl = newPos
 
-        # The agent got the right target
+        # The agent made a valid move and got the right target
         if (self.currentTarget in self.targets and
             newPos == self.targets[self.currentTarget]):
 
             self.message = f"Found {self.currentTarget}"
             self.currentTarget += 1
 
+            # Check if the puzzle is complete (all targets found and all cells visited)
             if self.currentTarget > len(self.targets) and len(self.visited) == self.ROWS * self.COLS:
                 self.message = "Puzzle complete!"
+                
+                # Puzzle complete
+                R = 300
+                done = True
+                
+                print("Puzzle complete!")
+                self.isPuzzleComplete = True
+                
+                return [Sl, R, done]
 
-        # The agent got the wrong target
-        elif newPos in self.targets.values():
+            # Found the correct target but the puzzle is not complete yet
+            R = 40
+            return [Sl, R, done]
+
+        # The agent made a valid move, but got the wrong target
+        if newPos in self.targets.values():
             self.message = "Wrong number"
+            R = -60
+            return [Sl, R, done]
+            
+        # The agent made a valid move, but got to a dead end
+        if not self.hasReachedEnd() and self.hasReachedDeadEnd():
+            self.message = "Dead end reached"
+            R = -200
+            done = True
+            
+            return [Sl, R, done]
+            
+        R = 3 # Valid move, but no target found yet
+        return [Sl, R, done]
             
     def initializeGrid(self):
         pygame.init()
@@ -104,20 +163,12 @@ class ZipEnvironment:
         
         self.clock = pygame.time.Clock()
         
-    def renderGame(self):
+    # Render the game state on the screen
+    def renderGame(self, episode):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-
-            if event.type == pygame.KEYDOWN:
-                if event.key in self.ACTIONS:
-                    self.step(
-                        self.ACTIONS[event.key]
-                    )
-
-                if event.key == pygame.K_r:
-                    self.reset()
         
         self.screen.fill(self.helper.WHITE)
 
@@ -125,7 +176,7 @@ class ZipEnvironment:
         self.helper.drawGrid(self.screen, self.ROWS, self.COLS, self.CELL)
         self.helper.drawTargets(self.screen, self.targets, self.CELL, self.font)
         self.helper.drawVisited(self.screen, self, self.CELL)
-        self.helper.drawMsg(self.screen, self.message, self.font)
+        self.helper.drawMsg(self.screen, self.message, self.font, episode)
         
         if self.hasBlockedEdges:
             self.helper.drawWalls(self.screen, self, self.CELL)
@@ -133,18 +184,20 @@ class ZipEnvironment:
         pygame.display.flip()
         self.clock.tick(30)
         
+    # Check if the agent has reached the end of the puzzle (all targets found and all cells visited)
     def hasReachedEnd(self):
         return self.currentTarget > len(self.targets) and len(self.visited) == self.ROWS * self.COLS
     
+    # Check if the agent has reached a dead end (no valid moves left)
     def hasReachedDeadEnd(self):
         # Check if there are any valid moves left
-        for action in self.ACTIONS.values():
+        for action in self.ACTIONS:
             dr, dc = action
             newPos = (self.agentPos[0] + dr, self.agentPos[1] + dc)
-
+            
             if (self.inside(newPos) and
                 (not self.hasBlockedEdges or not self.hasWall(self.agentPos, newPos)) and
                 newPos not in self.visited):
                 return False  # There is at least one valid move left
 
-        return True  # No valid moves left
+        return True # No valid moves left
