@@ -127,7 +127,6 @@ class ZipEnvironment:
                 R = 300
                 done = True
                 
-                print("Puzzle complete!")
                 self.isPuzzleComplete = True
                 
                 return [Sl, R, done]

@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     fig, ax = plt.subplots(figsize=(10,6))
 
-    raw_line, = ax.plot([], [], label="Reward")
+    raw_line, = ax.plot([], [], label="Reward", alpha=0.5)
     avg_line, = ax.plot([], [], label="Moving Average")
 
     ax.set_xlabel("Episode")

@@ -24,10 +24,11 @@ class QLearning():
         # - Agent's position (row, col)
         # - Current target number (1, 2, ..., numTargets)
         self.numTargets = len(env.targets)
+        self.numCells = env.ROWS * env.COLS
         self.numStates = (
-            env.ROWS *
-            env.COLS *
-            self.numTargets
+            self.numCells *
+            self.numTargets *
+            (self.numCells + 1)
         )
         
         # Initialize Q-table with zeros
@@ -40,15 +41,17 @@ class QLearning():
         r, c = state
 
         t = self.env.currentTarget
-
         if t > self.numTargets:
             t = self.numTargets
 
-        cells = self.env.ROWS * self.env.COLS
+        visitCount = len(self.env.visited)
+
+        cells = self.numCells
 
         return (
-            (t-1)*cells
-            + r*self.env.COLS
+            (t - 1) * cells * (cells + 1)
+            + (visitCount - 1) * cells
+            + r * self.env.COLS
             + c
         )
 
@@ -139,7 +142,8 @@ class QLearning():
     def runEpisode(self, env):
 
         # Decay epsilon
-        # self.epsilon = max(0.01, self.epsilon * 0.999)
+        self.epsilon = max(0.05, self.epsilon * 0.997)
+        self.alpha = max(0.01, self.alpha * 0.995)
 
         # New episode
         self.episode += 1
@@ -149,9 +153,14 @@ class QLearning():
 
         rewards = []
 
+        max_steps = 100
+        steps = 0
+
         while True:
             # Q-Learning step
             Sl, R, done = self.runQLearning(S)
+
+            steps += 1
 
             # Advance state
             S = Sl
@@ -160,6 +169,11 @@ class QLearning():
 
             # Render
             env.renderGame(self.episode)
+
+            if steps >= max_steps:
+                done = True
+                R -= 100  # Penalty for exceeding max steps
+                rewards[-1] = R
 
             # End episode?
             if done == True:
