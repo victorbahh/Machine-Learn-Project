@@ -120,14 +120,21 @@ class ZipEnvironment:
             self.currentTarget += 1
 
             # Check if the puzzle is complete (all targets found and all cells visited)
-            if self.currentTarget > len(self.targets) and len(self.visited) == self.ROWS * self.COLS:
-                self.message = "Puzzle complete!"
+            if self.currentTarget > len(self.targets):
                 
-                # Puzzle complete
-                R = 300
-                done = True
+                if len(self.visited) == self.ROWS * self.COLS:
+                    self.message = "Puzzle complete!"
+                    print("Puzzle complete!")
                 
-                self.isPuzzleComplete = True
+                    # Puzzle complete
+                    R = 300
+                    done = True
+                
+                    self.isPuzzleComplete = True
+                
+                else:
+                    self.message = f"Found all targets, but not all cells visited yet"
+                    R = 60
                 
                 return [Sl, R, done]
 
@@ -143,10 +150,17 @@ class ZipEnvironment:
             
         # The agent made a valid move, but got to a dead end
         if not self.hasReachedEnd() and self.hasReachedDeadEnd():
-            self.message = "Dead end reached"
-            R = -100
+            if self.currentTarget == 1:
+                self.message = "Dead end reached at the beginning"
+                R = -200
+            elif self.currentTarget <= len(self.targets) // 2:
+                self.message = f"Dead end reached after finding {self.currentTarget - 1}"
+                R = -100
+            elif self.currentTarget >= len(self.targets) // 2:
+                self.message = f"Dead end reached after finding {self.currentTarget - 1}"
+                R = -50
+                
             done = True
-            
             return [Sl, R, done]
             
         R = 2 # Valid move, but no target found yet

@@ -59,27 +59,47 @@ class QLearning():
     def reset(self):
         return self.env.reset()
 
+    def getDegree(self, pos):
+        valid = self.env.validActions(pos)
+
+        degree = 0
+        for a in valid:
+            dr, dc = self.env.ACTIONS[a]
+            nextPos = (pos[0] + dr, pos[1] + dc)
+
+            if nextPos not in self.env.visited:
+                degree += 1
+
+        return degree
+
     # Epsilon-soft policy for action selection
     def tabularEpsilonSoftPolicy(self, state):
-
-        valid = self.env.validActions(self.env.agentPos)
+        pos = self.env.agentPos
+        valid = self.env.validActions(pos)
 
         if len(valid) == 0:
             return None
 
-        qvals = self.Q[state, valid]
+        beta = 0.2
 
-        # ---- Random tie-breaking among best actions ----
-        maxQ = qvals.max()
+        scores = []
 
-        bestIndices = np.flatnonzero(
-            qvals == maxQ
-        )
+        for a in valid:
+            dr, dc = self.env.ACTIONS[a]
+            nextPos = (pos[0] + dr, pos[1] + dc)
 
+            degree = self.getDegree(nextPos)
+
+            score = self.Q[state, a] - beta * degree
+            scores.append(score)
+
+        scores = np.array(scores)
+        
+        maxScore = scores.max()
+        bestIndices = np.flatnonzero(scores == maxScore)
         bestIdx = np.random.choice(bestIndices)
 
         bestAction = valid[bestIdx]
-        # -----------------------------------------------
 
         n = len(valid)
 
@@ -142,8 +162,8 @@ class QLearning():
     def runEpisode(self, env):
 
         # Decay epsilon
-        self.epsilon = max(0.05, self.epsilon * 0.997)
-        self.alpha = max(0.01, self.alpha * 0.995)
+        self.epsilon = max(0.01, self.epsilon * 0.999)
+        self.alpha = max(0.01, self.alpha * 0.999)
 
         # New episode
         self.episode += 1
