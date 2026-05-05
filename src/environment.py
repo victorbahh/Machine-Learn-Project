@@ -63,6 +63,9 @@ class ZipEnvironment:
             ):
                 continue
             
+            if newPos in self.visited:
+                continue
+            
             valid.append(i)
         return valid
 
@@ -101,10 +104,10 @@ class ZipEnvironment:
             
             return [Sl, R, done]
 
-        if newPos in self.visited:
-            self.message = "Already visited"
-            R = -15
-            return [Sl, R, done]
+        # if newPos in self.visited:
+        #     self.message = "Already visited"
+        #     R = -15
+        #     return [Sl, R, done]
 
         # Valid move: register move and the previous direction
         self.visited[self.agentPos] = action

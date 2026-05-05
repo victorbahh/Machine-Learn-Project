@@ -94,13 +94,13 @@ class QLearning():
             scores.append(score)
 
         scores = np.array(scores)
-        
+
         maxScore = scores.max()
         bestIndices = np.flatnonzero(scores == maxScore)
         bestIdx = np.random.choice(bestIndices)
 
         bestAction = valid[bestIdx]
-
+        
         n = len(valid)
 
         p1 = 1 - self.epsilon + self.epsilon/n
@@ -124,7 +124,7 @@ class QLearning():
         A = self.tabularEpsilonSoftPolicy(S)
         
         if A is None:
-            return None, -500, True
+            return None, 0, True
 
         # Execute action A
         SlPos, R, done = self.env.step(self.env.ACTIONS[A])
