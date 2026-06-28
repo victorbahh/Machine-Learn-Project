@@ -41,7 +41,7 @@ class ZipEnvironment:
         ]
         
         self.isPuzzleComplete = False
-        
+        self.episode = 0
         self.reset()
 
     # Get valid actions from a given position (considering grid boundaries and walls)
@@ -93,82 +93,71 @@ class ZipEnvironment:
         dr, dc = action
         Sl = self.agentPos
         R = -1
-        done = False
 
         newPos = (self.agentPos[0] + dr, self.agentPos[1] + dc)
-
-        if self.hasReachedDeadEnd():
-            self.message = "Dead end reached"
-            R = -100
-            done = True
-            
-            return [Sl, R, done]
-
-        # if newPos in self.visited:
-        #     self.message = "Already visited"
-        #     R = -15
-        #     return [Sl, R, done]
-
-        # Valid move: register move and the previous direction
+        
+        # Movimento válido
         self.visited[self.agentPos] = action
         self.agentPos = newPos
         self.visited[newPos] = None
         Sl = newPos
 
-        # The agent made a valid move and got the right target
-        if (self.currentTarget in self.targets and
-            newPos == self.targets[self.currentTarget]):
+        # Atualiza o target caso ele tenha sido encontrado
+        found_target = False
 
-            self.message = f"Found {self.currentTarget}"
+        if (
+            self.currentTarget in self.targets and
+            newPos == self.targets[self.currentTarget]
+        ):
+            found_target = True
             self.currentTarget += 1
-
-            # Check if the puzzle is complete (all targets found and all cells visited)
-            if self.currentTarget > len(self.targets):
-                
-                if len(self.visited) == self.ROWS * self.COLS:
-                    self.message = "Puzzle complete!"
-                    print("Puzzle complete!")
-                
-                    # Puzzle complete
-                    R = 300
-                    done = True
-                
-                    self.isPuzzleComplete = True
-                
-                else:
-                    self.message = f"Found all targets, but not all cells visited yet"
-                    R = 60
-                
-                return [Sl, R, done]
-
-            # Found the correct target but the puzzle is not complete yet
-            R = 30
-            return [Sl, R, done]
-
-        # The agent made a valid move, but got the wrong target
-        if newPos in self.targets.values():
-            self.message = "Wrong number"
-            R = -60
-            return [Sl, R, done]
             
-        # The agent made a valid move, but got to a dead end
-        if not self.hasReachedEnd() and self.hasReachedDeadEnd():
+        # Puzzle completo
+        if self.hasReachedEnd():
+            self.message = "Puzzle complete!"
+            print(f"Puzzle complete in episode: {self.episode}")
+
+            self.isPuzzleComplete = True
+            return [Sl, 1000, True]
+        
+        # Dead end
+        if self.hasReachedDeadEnd():
+
             if self.currentTarget == 1:
-                self.message = "Dead end reached at the beginning"
                 R = -200
             elif self.currentTarget <= len(self.targets) // 2:
-                self.message = f"Dead end reached after finding {self.currentTarget - 1}"
                 R = -100
-            elif self.currentTarget >= len(self.targets) // 2:
-                self.message = f"Dead end reached after finding {self.currentTarget - 1}"
+            else:
                 R = -50
+
+            self.message = (
+                f"Dead end reached after finding "
+                f"{self.currentTarget - 1}"
+            )
+
+            return [Sl, R, True]
+        
+        # Encontrou o target correto
+        if found_target:
+
+            self.message = f"Found {self.currentTarget - 1}"
+
+            if self.currentTarget > len(self.targets):
+                self.message = (
+                    "Found all targets, but not all cells visited yet"
+                )
+                return [Sl, 60, False]
+
+            return [Sl, 30, False]
+
+        # Target errado
+        if newPos in self.targets.values():
+            self.message = "Wrong number"
+            return [Sl, -60, False]
+
+        # Movimento comum
+        return [Sl, 2, False]
                 
-            done = True
-            return [Sl, R, done]
-            
-        R = 2 # Valid move, but no target found yet
-        return [Sl, R, done]
-            
     def initializeGrid(self):
         pygame.init()
 
@@ -181,6 +170,7 @@ class ZipEnvironment:
         
     # Render the game state on the screen
     def renderGame(self, episode):
+        self.episode = episode
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()

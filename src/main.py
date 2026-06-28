@@ -1,23 +1,30 @@
-from QLearning import QLearning
-from environment import ZipEnvironment
-
 import numpy as np
 import matplotlib.pyplot as plt
 
-import yaml
+from environment import ZipEnvironment
+from DQN import DQNAgent
+from QLearning import QLearning
 
-if __name__ == "__main__":
-
-    with open("src/params.yaml", "r") as file:
-        params = yaml.safe_load(file)
-
-    numEpisodes = params["learning"]["episodes"]
-
+def main():
     env = ZipEnvironment()
+    
+    # Choose the learning method
+    method = int(input(
+        "Choose the method: Q-Learning (1) or DQN (2): "
+    ).strip())
+    
+    if method == 1:
+        agent = QLearning(env)
+    elif method == 2:
+        agent = DQNAgent(env)
+    
     env.initializeGrid()
 
-    qlearning = QLearning(env)
-    
+    rewards = []
+    bestReward = -float("inf")
+
+    print(f"Starting {type(agent).__name__} training...")
+
     # -------------------------
     # Interactive plotting
     # -------------------------
@@ -30,24 +37,33 @@ if __name__ == "__main__":
 
     ax.set_xlabel("Episode")
     ax.set_ylabel("Return")
-    ax.set_title("Learning Curve")
+    ax.set_title(f"Learning Curve ({type(agent).__name__})")
 
     ax.legend()
     ax.grid(True)
 
     window = 100
 
-    for episode in range(numEpisodes):
+    for episode in range(agent.episodes):
 
-        qlearning.runEpisode(env)
+        totalReward = agent.runEpisode(env)
+        rewards.append(totalReward)
 
-        # Updates the plot every 10 episodes
-        if episode % 10 == 0:
+        if totalReward > bestReward:
+            bestReward = totalReward
 
-            rewards = np.array(
-                qlearning.rewardsPerEpisode
+        if episode % 100 == 0:
+            avgReward = np.mean(
+                rewards[-100:]
+            ) if len(rewards) >= 100 else np.mean(rewards)
+
+            print(
+                f"Episode {episode:5d} | "
+                f"Reward: {totalReward:8.2f} | "
+                f"Avg(100): {avgReward:8.2f} | "
+                f"Epsilon: {agent.epsilon:.4f}"
             )
-
+            
             episodes = np.arange(
                 1,
                 len(rewards)+1
@@ -59,7 +75,6 @@ if __name__ == "__main__":
             )
 
             if len(rewards) >= window:
-
                 moving_avg = np.convolve(
                     rewards,
                     np.ones(window)/window,
@@ -82,3 +97,19 @@ if __name__ == "__main__":
 
     plt.ioff()
     plt.show()
+
+    print("\nTraining finished.")
+    print(f"Best reward: {bestReward}")
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(rewards)
+
+    plt.xlabel("Episode")
+    plt.ylabel("Reward")
+    plt.title(f"{type(agent).__name__} Training Reward")
+
+    plt.grid(True)
+    plt.show()
+
+if __name__ == "__main__":
+    main()

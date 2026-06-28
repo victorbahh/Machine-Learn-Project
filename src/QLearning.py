@@ -23,6 +23,7 @@ class QLearning():
         # The state is represented as a single integer index, but it corresponds to a combination of:
         # - Agent's position (row, col)
         # - Current target number (1, 2, ..., numTargets)
+        # - Number of visited cells (0, 1, ..., numCells)
         self.numTargets = len(env.targets)
         self.numCells = env.ROWS * env.COLS
         self.numStates = (
@@ -162,8 +163,8 @@ class QLearning():
     def runEpisode(self, env):
 
         # Decay epsilon
-        self.epsilon = max(0.01, self.epsilon * 0.999)
-        self.alpha = max(0.01, self.alpha * 0.999)
+        self.epsilon = self.epsilon * 0.999
+        self.alpha = self.alpha * 0.999
 
         # New episode
         self.episode += 1
