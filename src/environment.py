@@ -109,7 +109,7 @@ class ZipEnvironment:
         #     R = -15
         #     return [Sl, R, done]
 
-        # Valid move: register move and the previous direction
+        # Valid move: update position and visited path
         self.visited[self.agentPos] = action
         self.agentPos = newPos
         self.visited[newPos] = None
@@ -119,6 +119,7 @@ class ZipEnvironment:
         if (self.currentTarget in self.targets and
             newPos == self.targets[self.currentTarget]):
 
+            reward = 10
             self.message = f"Found {self.currentTarget}"
             self.currentTarget += 1
 
