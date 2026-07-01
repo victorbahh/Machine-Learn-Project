@@ -238,8 +238,6 @@ class DQNAgent:
         
         if self.episode > 1000:
             self.lr = 0.0005
-        elif self.episode > 2000:
-            self.lr = 0.0001
             
         for param_group in self.optimizer.param_groups:
             param_group['lr'] = self.lr
